@@ -63,6 +63,10 @@ export function resizeRenderer(renderer, camera) {
   const canvas = renderer.domElement;
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
+  // Guard against zero dimensions to prevent division by zero
+  if (width <= 0 || height <= 0) {
+    return;
+  }
   if (canvas.width !== width || canvas.height !== height) {
     renderer.setSize(width, height, false);
     const aspect = width / height;

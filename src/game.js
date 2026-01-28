@@ -33,11 +33,16 @@ export function step(state, rng = Math.random) {
   const head = state.snake[0];
   const nextHead = { x: head.x + dir.x, z: head.z + dir.z };
 
-  if (hitsWall(nextHead, state.size) || hitsSelf(nextHead, state.snake)) {
+  // Determine if eating fruit before collision check
+  const ate = state.fruit && nextHead.x === state.fruit.x && nextHead.z === state.fruit.z;
+
+  // When not eating, exclude tail from collision check since it will move
+  const collisionSnake = ate ? state.snake : state.snake.slice(0, -1);
+
+  if (hitsWall(nextHead, state.size) || hitsSelf(nextHead, collisionSnake)) {
     return { ...state, alive: false };
   }
 
-  const ate = state.fruit && nextHead.x === state.fruit.x && nextHead.z === state.fruit.z;
   const nextSnake = [nextHead, ...state.snake];
   if (!ate) nextSnake.pop();
 
@@ -64,9 +69,26 @@ function hitsSelf(pos, snake) {
 }
 
 function randomFreeCell(state, rng) {
-  while (true) {
+  const totalCells = state.size * state.size;
+  // No free cells if snake fills the grid
+  if (state.snake.length >= totalCells) {
+    return null;
+  }
+
+  // Use bounded attempts to avoid long loops when grid is nearly full
+  const maxAttempts = totalCells * 2;
+  for (let i = 0; i < maxAttempts; i++) {
     const x = Math.floor(rng() * state.size);
     const z = Math.floor(rng() * state.size);
     if (!hitsSelf({ x, z }, state.snake)) return { x, z };
   }
+
+  // Fallback: exhaustive search for remaining free cells
+  for (let x = 0; x < state.size; x++) {
+    for (let z = 0; z < state.size; z++) {
+      if (!hitsSelf({ x, z }, state.snake)) return { x, z };
+    }
+  }
+
+  return null;
 }
