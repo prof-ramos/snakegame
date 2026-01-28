@@ -202,7 +202,8 @@ const KEY_MAP = {
 };
 
 export function keyToDirection(key) {
-  return KEY_MAP[key] || null;
+  const normalized = key.length === 1 ? key.toLowerCase() : key;
+  return KEY_MAP[normalized] || null;
 }
 
 export function isReverse(current, next) {
@@ -277,19 +278,21 @@ export function createRenderer(canvas, size) {
   return { renderer, scene, camera, snakeMesh, fruit };
 }
 
-export function updateSnakeMesh(snakeMesh, snake) {
+export function updateSnakeMesh(snakeMesh, snake, size) {
+  const offset = size / 2 - 0.5;
   const matrix = new THREE.Matrix4();
   for (let i = 0; i < snake.length; i++) {
     const p = snake[i];
-    matrix.setPosition(p.x - 0.5, 0.5, p.z - 0.5);
+    matrix.setPosition(p.x - offset, 0.5, p.z - offset);
     snakeMesh.setMatrixAt(i, matrix);
   }
   snakeMesh.count = snake.length;
   snakeMesh.instanceMatrix.needsUpdate = true;
 }
 
-export function updateFruitMesh(fruit, pos) {
-  fruit.position.set(pos.x - 0.5, 0.5, pos.z - 0.5);
+export function updateFruitMesh(fruit, pos, size) {
+  const offset = size / 2 - 0.5;
+  fruit.position.set(pos.x - offset, 0.5, pos.z - offset);
 }
 
 export function resizeRenderer(renderer, camera) {
@@ -376,8 +379,8 @@ let last = performance.now();
 let acc = 0;
 
 const { renderer, scene, camera, snakeMesh, fruit } = createRenderer(canvas, state.size);
-updateSnakeMesh(snakeMesh, state.snake);
-updateFruitMesh(fruit, state.fruit);
+updateSnakeMesh(snakeMesh, state.snake, state.size);
+updateFruitMesh(fruit, state.fruit, state.size);
 
 window.addEventListener('keydown', (e) => {
   if (mode === 'idle' && e.key === 'Enter') {
@@ -392,7 +395,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  const next = keyToDirection(e.key.toLowerCase());
+  const next = keyToDirection(e.key);
   if (next && !isReverse(state.dir, next)) {
     state = { ...state, nextDir: next };
   }
@@ -406,8 +409,8 @@ function animate(t) {
   while (mode === 'playing' && acc >= state.tickMs) {
     acc -= state.tickMs;
     state = step(state);
-    updateSnakeMesh(snakeMesh, state.snake);
-    updateFruitMesh(fruit, state.fruit);
+    updateSnakeMesh(snakeMesh, state.snake, state.size);
+    updateFruitMesh(fruit, state.fruit, state.size);
 
     scoreEl.textContent = `Pontos: ${state.snake.length - 1}`;
 
